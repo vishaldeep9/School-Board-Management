@@ -86,7 +86,8 @@ public class SchoolServiceImpl implements SchoolService {
 			academicPrograms.forEach((ac)->{
 				classHourRepo.deleteAll(ac.getClassHours());
 			});
-			programRepo.deleteAll(sc.getAcademicPrograms());
+			programRepo.deleteAll(academicPrograms);
+			
 	
 		});
 		
