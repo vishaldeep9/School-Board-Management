@@ -2,6 +2,7 @@ package com.school.sba.entity;
 
 import java.util.List;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -30,7 +31,9 @@ public class School {
 	private String emailId;
 	private String address;
 
-	@OneToOne
+	
+	//Cascade.remove means deleting a record in a parent table automatically deletes all related records in child tables. 
+	@OneToOne(cascade = CascadeType.REMOVE)
 	private Schedule schedule;
 	
 	@OneToMany

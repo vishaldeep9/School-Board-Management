@@ -29,13 +29,13 @@ public class SchoolServiceImpl implements SchoolService {
 
 	@Autowired
 	private SchoolRepo schoolRepo;
-	
+
 	@Autowired
 	private ClassHourRepo classHourRepo;
 
 	@Autowired
 	private AcademicProgramRepo programRepo;
-	
+
 	@Autowired
 	private UserRepo userRepo;
 
@@ -77,20 +77,27 @@ public class SchoolServiceImpl implements SchoolService {
 		}
 		return new ResponseEntity<ResponseStructure<SchoolResponse>>(responseStructure, HttpStatus.CREATED);
 	}
-	
+
 	@Override
 	public String deleteSchool() {
 		List<School> school = schoolRepo.findByIsDeleted(true);
-		school.forEach((sc)->{
-			List<AcademicProgram> academicPrograms= sc.getAcademicPrograms();
-			academicPrograms.forEach((ac)->{
+		school.forEach((sc) -> {
+			List<AcademicProgram> academicPrograms = sc.getAcademicPrograms();
+			academicPrograms.forEach((ac) -> {
 				classHourRepo.deleteAll(ac.getClassHours());
 			});
 			programRepo.deleteAll(academicPrograms);
-			
-	
+
+			List<User> users = userRepo.findBySchool(school);
+			users.forEach((sch) -> {
+				if (sch.getUserRole().equals(UserRole.ADMIN)) {
+					users.remove(sch);
+				}
+			});
+			userRepo.deleteAll(users);
 		});
-		
+
+		schoolRepo.deleteAll(school);
 		return "school has been deleted";
 	}
 

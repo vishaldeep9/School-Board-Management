@@ -68,8 +68,8 @@ public class ClassHourServiceImpl implements ClassHourService {
 
 	@Override
 	public ResponseEntity<ResponseStructure<String>> registerClassHour(int programId) {
+		
 		return academicProgramRepo.findById(programId).map(academicProgarm -> {
-
 			School school = academicProgarm.getSchool();
 			Schedule schedule = school.getSchedule();
 			if (schedule != null) {
@@ -83,6 +83,8 @@ public class ClassHourServiceImpl implements ClassHourService {
 				LocalDateTime breakTimeStart = LocalDateTime.now().with(schedule.getBreakTime());
 				LocalDateTime breakTimeEnd = breakTimeStart.plusMinutes(schedule.getBreakLengthInMinutes().toMinutes());
 				for (int day = 1; day <= 6; day++) {
+					
+					//2 is total break time
 					for (int hour = 1; hour <= classHourPerDay + 2; hour++) {
 						ClassHour classHour = new ClassHour();
 						LocalDateTime beginsAt = currentTime;
@@ -92,13 +94,13 @@ public class ClassHourServiceImpl implements ClassHourService {
 							if (!isBreakTime(beginsAt, endsAt, schedule)) {
 								classHour.setBeginsAt(beginsAt);
 								classHour.setEndsAt(endsAt);
-								classHour.setClassStatus(ClassStatus.NOTSCHEDULED);
-
+								classHour.setClassStatus(ClassStatus.ONGOING);
 								currentTime = endsAt;
+								
 							} else {
 								classHour.setBeginsAt(breakTimeStart);
 								classHour.setEndsAt(breakTimeEnd);
-								classHour.setClassStatus(ClassStatus.FINISHED);
+								classHour.setClassStatus(ClassStatus.UPCOMING);
 								currentTime = breakTimeEnd;
 							}
 						} else {
