@@ -1,6 +1,7 @@
 package com.school.sba.serviceImpl;
 
 import java.time.Duration;
+import java.time.LocalTime;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -8,16 +9,18 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.school.sba.entity.Schedule;
+import com.school.sba.exception.ConstraintViolationException;
 import com.school.sba.exception.UnauthorizedException;
 import com.school.sba.exception.UserNotFoundException;
 import com.school.sba.repository.ScheduleRepo;
 import com.school.sba.repository.SchoolRepo;
 import com.school.sba.requestdto.ScheduleRequest;
 import com.school.sba.responsedto.ScheduleResponse;
+import com.school.sba.service.ScheduleService;
 import com.school.sba.util.ResponseStructure;
 
 @Service
-public class ScheduleServiceImpl implements com.school.sba.service.ScheduleService {
+public class ScheduleServiceImpl implements ScheduleService {
 
 	@Autowired
 	private SchoolRepo schoolRepo;
@@ -34,6 +37,10 @@ public class ScheduleServiceImpl implements com.school.sba.service.ScheduleServi
 		return schoolRepo.findById(schoolId).map(school -> {
 			if (school.getSchedule() == null) {
 				Schedule schedule = scheduleRepo.save(mapToSchedule(scheduleRequest));
+				boolean validateSchdeule = validateSchdeule(schedule);
+				if(validateSchdeule) {
+					
+				
 				school.setSchedule(schedule);
 				schoolRepo.save(school);
 				structure.setData(mapToScheduleResponse(schedule));
@@ -41,12 +48,68 @@ public class ScheduleServiceImpl implements com.school.sba.service.ScheduleServi
 				structure.setStatus(HttpStatus.CREATED.value());
 				return new ResponseEntity<ResponseStructure<ScheduleResponse>>(structure, HttpStatus.CREATED);
 			} else {
+				structure.setData(mapToScheduleResponse(schedule));
+				structure.setMessage("Scheduled can't be saved bcz of wrong timing entered");
+				structure.setStatus(HttpStatus.CREATED.value());
+                 return new ResponseEntity<ResponseStructure<ScheduleResponse>>(structure, HttpStatus.CREATED);
+			}}
+			
+			else {
 				throw new UnauthorizedException("Schedule already present in database", HttpStatus.BAD_REQUEST,
 						"More than 1 schedule not allowed in database");
 			}
 
 		}).orElseThrow(() -> new UserNotFoundException("School with given ID is not registered in the database",
 				HttpStatus.NOT_FOUND, "No such School in database"));
+	}
+
+	public boolean validateSchdeule(Schedule schedule) {
+		LocalTime opensAt = schedule.getOpensAt();
+		LocalTime closesAt = schedule.getClosesAt();
+		Duration classHourInMinutes = schedule.getClassHourInMinutes();
+		LocalTime breakTime = schedule.getBreakTime();
+		Duration breakLengthInMinutes = schedule.getBreakLengthInMinutes();
+		LocalTime lunchTime = schedule.getLunchTime();
+		Duration lunchLength = schedule.getLunchLengthInMinutes();
+
+		// it is Showing total class per day
+		int totalClassPerDay = schedule.getClassHoursPerDay();
+
+		int count = 0;
+		LocalTime classBeginAt = opensAt;
+		LocalTime classEndsAt = opensAt;
+
+		// finding total class[Note: 1 class hour timing is 1hr or 60 minute]
+		if (((totalClassPerDay * classHourInMinutes.toMinutes()) / 60) + (breakLengthInMinutes.toMinutes() / 60)
+				+ (lunchLength.toMinutes()) / 60 == (Duration.between(opensAt, closesAt).toMinutes()) / 60) {
+
+			// +2 is for lunch time and break time
+			for (int i = 0; i < totalClassPerDay + 2; i++) {
+				// We are adding 1hour
+				classEndsAt = classEndsAt.plusHours(classHourInMinutes.toHours());
+				
+				if (classEndsAt.equals(breakTime)) {
+					count++;
+					classEndsAt = classEndsAt.plusMinutes(breakLengthInMinutes.toMinutes());
+					
+				} else if (classEndsAt.equals(lunchTime)) {
+					count++;
+					classEndsAt = classEndsAt.plusHours(lunchLength.toHours());
+					
+				} else {
+					classBeginAt = classEndsAt;
+				}
+			}
+			if (count == 2) {
+				return true;
+			} else {
+				return false;
+			}
+		}
+
+		else {
+			throw new ConstraintViolationException("Wrong class hour", HttpStatus.NOT_ACCEPTABLE, null);
+		}
 	}
 
 	@Override

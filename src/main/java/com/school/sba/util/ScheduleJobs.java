@@ -44,8 +44,8 @@ public class ScheduleJobs {
 		log.info(programService.deleteAcademic());
 	}
 
-	// <minute> <hour> <day-of-month> <month> <day-of-week>
-	@Scheduled(cron = "* * * * MON")
+	//<second> <minute> <hour> <day-of-month> <month> <day-of-week>
+	@Scheduled(cron = "* * * * * MON")
 	public void generateClassHourForMonday() {
 
 		List<AcademicProgram> findAll = programRepo.findAll();

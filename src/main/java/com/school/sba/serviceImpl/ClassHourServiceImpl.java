@@ -135,6 +135,8 @@ public class ClassHourServiceImpl implements ClassHourService {
 		}).orElseThrow(() -> new AcademyProgramNotFoundByIdException("program not found by this Id"));
 	}
 
+	 
+	
 	@Override
 	public Object updateClassHour(List<ClassHourUpdateRequest> classHourUpdateRequest) {
 
