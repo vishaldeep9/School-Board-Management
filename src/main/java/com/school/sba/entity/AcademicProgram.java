@@ -33,6 +33,8 @@ public class AcademicProgram {
 	private String programName;
 	private LocalDate beginsAt;
 	private LocalDate endsAt;
+	
+	private boolean isDeleted;
 
 	@ManyToOne
 	private School school;
@@ -45,4 +47,9 @@ public class AcademicProgram {
 
 	@OneToMany(mappedBy = "academicProgram")
 	private List<ClassHour> classHours;
+
+	public boolean isAutoRepeat() {
+		// TODO Auto-generated method stub
+		return false;
+	}
 }

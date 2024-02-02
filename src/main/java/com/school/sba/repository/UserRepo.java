@@ -20,6 +20,6 @@ public interface UserRepo extends JpaRepository<User, Integer> {
 
 	List<User> findByIsDeleted(boolean b);
 
- List<User> findBySchool(List<School> school);
+ List<User> findBySchool(School school);
 
 }

@@ -4,5 +4,8 @@ public enum ClassStatus {
   ONGOING,
   FINISHED,
   UPCOMING,
-  NOTSCHEDULED
+  NOTSCHEDULED,
+  BREAK_TIME,
+  LUNCH_TIME
+  
 }

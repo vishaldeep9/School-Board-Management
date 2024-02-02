@@ -30,6 +30,8 @@ public class School {
 	private long contactNo;
 	private String emailId;
 	private String address;
+	
+	private boolean isDeleted;
 
 	
 	//Cascade.remove means deleting a record in a parent table automatically deletes all related records in child tables. 

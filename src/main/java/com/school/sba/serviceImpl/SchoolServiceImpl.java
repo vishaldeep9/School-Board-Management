@@ -88,7 +88,7 @@ public class SchoolServiceImpl implements SchoolService {
 			});
 			programRepo.deleteAll(academicPrograms);
 
-			List<User> users = userRepo.findBySchool(school);
+			List<User> users = userRepo.findBySchool(sc);
 			users.forEach((sch) -> {
 				if (sch.getUserRole().equals(UserRole.ADMIN)) {
 					users.remove(sch);
