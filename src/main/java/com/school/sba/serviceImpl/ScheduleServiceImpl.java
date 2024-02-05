@@ -38,22 +38,22 @@ public class ScheduleServiceImpl implements ScheduleService {
 			if (school.getSchedule() == null) {
 				Schedule schedule = scheduleRepo.save(mapToSchedule(scheduleRequest));
 				boolean validateSchdeule = validateSchdeule(schedule);
-				if(validateSchdeule) {
-					
-				
-				school.setSchedule(schedule);
-				schoolRepo.save(school);
-				structure.setData(mapToScheduleResponse(schedule));
-				structure.setMessage("Schedule saved to database");
-				structure.setStatus(HttpStatus.CREATED.value());
-				return new ResponseEntity<ResponseStructure<ScheduleResponse>>(structure, HttpStatus.CREATED);
-			} else {
-				structure.setData(mapToScheduleResponse(schedule));
-				structure.setMessage("Scheduled can't be saved bcz of wrong timing entered");
-				structure.setStatus(HttpStatus.CREATED.value());
-                 return new ResponseEntity<ResponseStructure<ScheduleResponse>>(structure, HttpStatus.CREATED);
-			}}
-			
+				if (validateSchdeule) {
+
+					school.setSchedule(schedule);
+					schoolRepo.save(school);
+					structure.setData(mapToScheduleResponse(schedule));
+					structure.setMessage("Schedule saved to database");
+					structure.setStatus(HttpStatus.CREATED.value());
+					return new ResponseEntity<ResponseStructure<ScheduleResponse>>(structure, HttpStatus.CREATED);
+				} else {
+					structure.setData(mapToScheduleResponse(schedule));
+					structure.setMessage("Scheduled can't be saved bcz of wrong timing entered");
+					structure.setStatus(HttpStatus.CREATED.value());
+					return new ResponseEntity<ResponseStructure<ScheduleResponse>>(structure, HttpStatus.CREATED);
+				}
+			}
+
 			else {
 				throw new UnauthorizedException("Schedule already present in database", HttpStatus.BAD_REQUEST,
 						"More than 1 schedule not allowed in database");
@@ -87,15 +87,15 @@ public class ScheduleServiceImpl implements ScheduleService {
 			for (int i = 0; i < totalClassPerDay + 2; i++) {
 				// We are adding 1hour
 				classEndsAt = classEndsAt.plusHours(classHourInMinutes.toHours());
-				
+
 				if (classEndsAt.equals(breakTime)) {
 					count++;
 					classEndsAt = classEndsAt.plusMinutes(breakLengthInMinutes.toMinutes());
-					
+
 				} else if (classEndsAt.equals(lunchTime)) {
 					count++;
 					classEndsAt = classEndsAt.plusHours(lunchLength.toHours());
-					
+
 				} else {
 					classBeginAt = classEndsAt;
 				}

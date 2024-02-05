@@ -1,15 +1,26 @@
 package com.school.sba.serviceImpl;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 
+import org.apache.commons.io.output.ByteArrayOutputStream;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.school.sba.entity.AcademicProgram;
 import com.school.sba.entity.ClassHour;
@@ -27,6 +38,7 @@ import com.school.sba.repository.ClassHourRepo;
 import com.school.sba.repository.SubjectRepo;
 import com.school.sba.repository.UserRepo;
 import com.school.sba.requestdto.ClassHourUpdateRequest;
+import com.school.sba.requestdto.ExcelRequest;
 import com.school.sba.service.ClassHourService;
 import com.school.sba.util.ResponceEntityProxy;
 import com.school.sba.util.ResponseStructure;
@@ -135,8 +147,6 @@ public class ClassHourServiceImpl implements ClassHourService {
 		}).orElseThrow(() -> new AcademyProgramNotFoundByIdException("program not found by this Id"));
 	}
 
-	 
-	
 	@Override
 	public Object updateClassHour(List<ClassHourUpdateRequest> classHourUpdateRequest) {
 
@@ -223,5 +233,131 @@ public class ClassHourServiceImpl implements ClassHourService {
 		classHour2.setUser(cl.getUser());
 
 		return classHour2;
+	}
+
+	@Override
+	public ResponseEntity<ResponseStructure<String>> printData(ExcelRequest excelRequest, int programId) {
+
+		AcademicProgram academicProgram = academicProgramRepo.findById(programId).orElseThrow(
+				() -> new UserNotFoundException("No user With This Id", HttpStatus.NOT_FOUND, "No User In DatBAse"));
+
+//		String filePath = "C:\\Users\\LENOVO\\OneDrive\\Desktop";
+//		String fileFolder = filePath + "/text.xlsx";
+
+		LocalDateTime from = excelRequest.getFromDate().atTime(LocalTime.MIDNIGHT);
+		LocalDateTime to = excelRequest.getToDate().atTime(LocalTime.MIDNIGHT).plusDays(1);
+		List<ClassHour> classhours = classHourRepo.findByAcademicProgramAndBeginsAtBetween(academicProgram, from, to);
+
+		XSSFWorkbook workbook = new XSSFWorkbook();
+		XSSFSheet createSheet = workbook.createSheet();
+
+		int rowNo = 0;
+		XSSFRow header = createSheet.createRow(rowNo);
+
+		// creating Row Heading
+		header.createCell(0).setCellValue("Class Hour Id");
+		header.createCell(1).setCellValue("from");
+		header.createCell(2).setCellValue("to");
+		header.createCell(3).setCellValue("Subject");
+		header.createCell(4).setCellValue("User");
+		header.createCell(5).setCellValue("RoomNo");
+
+		DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH-mm");
+		DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-mm-dd");
+
+		for (ClassHour classHour : classhours) {
+
+			XSSFRow row = createSheet.createRow(++rowNo);
+
+			// setting value in that row
+			row.createCell(0).setCellValue(classHour.getClassHourId());
+			row.createCell(1).setCellValue(dateTimeFormatter.format(classHour.getBeginsAt()));
+			row.createCell(2).setCellValue(dateTimeFormatter.format(classHour.getEndsAt()));
+//			row.createCell(3).setCellValue(classHour.getSubject().getSubjectName());
+//			row.createCell(4).setCellValue(classHour.getUser().getFirstName());
+//			row.createCell(5).setCellValue(classHour.getRoomNo());
+
+			if (classHour.getSubject() == null) {
+				row.createCell(3).setCellValue("");
+			} else {
+				row.createCell(3).setCellValue(classHour.getSubject().getSubjectName());
+			}
+
+			if (classHour.getUser() == null) {
+				row.createCell(4).setCellValue("");
+			} else {
+				row.createCell(4).setCellValue(classHour.getUser().getUsername());
+			}
+
+			try {
+				workbook.write(new FileOutputStream(excelRequest.getFilePath() + "\\text.xlsx"));
+			} catch (Exception e) {
+
+				e.printStackTrace();
+			}
+
+		}
+
+		return null;
+	}
+
+	@Override
+	public ResponseEntity<?> writeToExcel(MultipartFile file, int programId, LocalDate fromDate, LocalDate toDate)
+			throws IOException {
+
+		AcademicProgram academicProgram = academicProgramRepo.findById(programId).orElseThrow(
+				() -> new UserNotFoundException("No user With This Id", HttpStatus.NOT_FOUND, "No User In DatBAse"));
+		List<ClassHour> classhours = classHourRepo.findByAcademicProgramAndBeginsAtBetween(academicProgram, fromDate,
+				toDate);
+
+		DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH-mm");
+		DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-mm-dd");
+		XSSFWorkbook workbook = new XSSFWorkbook(file.getInputStream());
+
+		workbook.forEach(sheet -> {
+
+			int rowNo = 0;
+			Row row = sheet.createRow(rowNo);
+			row.createCell(0).setCellValue("Class Hour Id");
+			row.createCell(1).setCellValue("from");
+			row.createCell(2).setCellValue("to");
+			row.createCell(3).setCellValue("subject");
+			row.createCell(4).setCellValue("user");
+			row.createCell(5).setCellValue("room no");
+
+			for (ClassHour classHour : classhours) {
+				Row row2 = sheet.createRow(++rowNo);
+
+				// setting value in that row
+				row2.createCell(0).setCellValue(classHour.getClassHourId());
+				row2.createCell(1).setCellValue(dateTimeFormatter.format(classHour.getBeginsAt()));
+				row2.createCell(2).setCellValue(dateTimeFormatter.format(classHour.getEndsAt()));
+//				row.createCell(3).setCellValue(classHour.getSubject().getSubjectName());
+//				row.createCell(4).setCellValue(classHour.getUser().getFirstName());
+//				row.createCell(5).setCellValue(classHour.getRoomNo());
+
+				if (classHour.getSubject() == null) {
+					row2.createCell(3).setCellValue("");
+				} else {
+					row2.createCell(3).setCellValue(classHour.getSubject().getSubjectName());
+				}
+
+				if (classHour.getUser() == null) {
+					row2.createCell(4).setCellValue("");
+				} else {
+					row2.createCell(4).setCellValue(classHour.getUser().getUsername());
+				}
+			}
+		});
+
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		workbook.write(outputStream);
+		workbook.close();
+
+		byte[] byteData = outputStream.toByteArray();
+
+		return ResponseEntity.ok().header("Content Disposition", "attachment filename" + file.getOriginalFilename())
+				.contentType(MediaType.APPLICATION_OCTET_STREAM).
+				body(byteData);
 	}
 }

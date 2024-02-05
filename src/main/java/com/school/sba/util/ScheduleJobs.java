@@ -35,7 +35,7 @@ public class ScheduleJobs {
 	@Autowired
 	private AcademicProgramRepo programRepo;
 
-	@Scheduled(fixedDelay = 1000L)
+	@Scheduled(fixedDelay = 10000L)
 	public void test() {
 
 		String deleteUser = userService.deleteUser();
